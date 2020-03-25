@@ -1,0 +1,16 @@
+\ бегающий по кардиоиде фрактал Мандельброта
+: xx x .8 - ;
+: yy y .5 - ;
+: tt t .4 * ;
+: a .25 * ;
+: mx xx 2 a tt cos * 2 tt * cos a - + ;
+: my yy 2 a tt sin * 2 tt * sin a - + ;
+: mm 2dup Z* mx my z+ ;
+mx my 
+mm mm mm mm mm mm
+mm mm mm mm mm mm
+mm mm mm mm mm mm
+mm mm mm mm mm mm
+dup * swap dup * +
+0 > negate 1 +
+dup dup

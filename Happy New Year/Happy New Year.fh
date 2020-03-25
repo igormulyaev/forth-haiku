@@ -1,0 +1,166 @@
+\ Для работы нужно отключение проверки на длину программы в haiku.js
+\ "С новым годом"
+: w 1 13 / ; \ char width
+: w2 w 2 / ; \ char width / 2
+: w_inner w 3 / ; \ inner width
+: w_outer w2 w_inner - ; \ line width
+: h w 1.5 * ; \ char height
+: h2 h 2 / ; \ char height / 2
+: factor_y w h / ; \ ellipse factor = width / height
+
+: xor 2dup not and -rot swap not and or ;
+: sq dup * ; \ square
+: norm_xy negate y + swap negate x + swap ; \ (x1 y1 -> x-x1 y-y1)
+: push_xy push push ;
+: pop_xy pop pop ;
+: copy_xy pop_xy 2dup push_xy ; \ copy two values from return stack
+: copy_xy_norm pop_xy norm_xy 2dup push_xy ; \ norm and copy two values from return stack
+
+: center z+ 0.5 0 z* ; \ (x1 y1 x2 y2 -> x_center y_center)
+: radius negate swap negate swap z+ sq swap sq + 4 / sqrt ; \ (x1 y1 x2 y2 -> radius)
+: phase negate swap negate swap z+ atan2 ; \ (x1 y1 x2 y2 -> phase)
+
+: ellipse rot * sq swap sq + >= ; \ (r^2 factor_y x_center_norm y_center_norm) -> 0 | 1
+: rect abs h2 < swap abs w2 < and ; \ (x_center_norm y_center_norm) -> 0 | 1
+
+\ center of char -> return stack: x1 y1 push_xy
+
+: char_c
+  w2 sq factor_y copy_xy_norm ellipse \ outer ellipse
+  w_inner sq factor_y copy_xy ellipse not and \ inner ellipse
+  pop_xy abs w_inner > swap 0 < or and \ right hole
+;
+: char_h 
+  copy_xy_norm rect \ whole char rect
+  pop_xy abs w_outer < swap abs w_inner >= or and \ top and bottom cutouts
+;
+: char_o 
+  w2 sq factor_y copy_xy_norm ellipse \ outer ellipse 
+  w_inner sq factor_y pop_xy ellipse not and \ inner ellipse
+;
+
+: char_b 
+  w w_outer - sq w h / 3 * copy_xy_norm w2 h2 2 / negate z+ ellipse \ top ellipse
+  w w_outer 2 * - sq w h / 4 * copy_xy w2 h2 2 / negate z+ ellipse not and \ top ellipse hole
+  w sq w h / 3.5 * copy_xy w2 h2 2 / z+ ellipse or \ bottom ellipse
+  w w_outer - sq w h / 5 * copy_xy w2 h2 2 / z+ ellipse not and \ bottom ellipse hole
+  copy_xy drop w_inner negate < or \ left line
+  pop_xy rect and \ whole rect
+;
+
+: char_y
+  w 0.67 * sq w h / 2.5 * copy_xy_norm w2 h2 2 / z+ ellipse \ bottom ellipse
+  w 0.67 * w_outer - sq w h / 3 * copy_xy w2 h2 2 / z+ ellipse not and \ bottom ellipse hole
+  copy_xy drop abs w_inner > or \ left and right lines
+  pop_xy rect and \ whole rect
+;
+
+: char_m
+  copy_xy_norm factor_y * + 0 > \ \line
+  copy_xy factor_y * - 0 < and \ /line
+  copy_xy factor_y * + w_outer > \ \cutout
+  copy_xy factor_y * - w_outer negate < and not and \ /cutout
+  copy_xy drop abs w_inner > or \ left and right lines
+  pop_xy rect and \ whole rect
+;
+
+: char_g
+  copy_xy_norm rect \ whole rect
+  pop_xy h2 w_outer - < swap w_inner negate > and not and
+;
+
+: char_d
+  copy_xy_norm swap 2 * swap factor_y * + w2 < \ \line
+  copy_xy swap 2 * swap factor_y * - w2 negate > and \ /line
+  w_outer sq factor_y copy_xy w_outer + ellipse not and \ central hole
+  copy_xy swap drop h2 negate w_inner + < or \ bottom block
+  copy_xy h2 negate w_outer + < swap abs w_inner < and not and \ bottom cutoff
+  pop_xy rect and \ whole rect
+;
+
+: pos_c_a w 2.5 * w 7.5 * h2 + ;
+: pos_h_a w 4.5 * w 7.5 * h2 + ;
+: pos_o1_a w 6 * w 7.5 * h2 + ;
+: pos_b_a w 7.5 * w 7.5 * h2 + ;
+: pos_y_a w 9 * w 7.5 * h2 + ;
+: pos_m1_a w 10.5 * w 7.5 * h2 + ;
+: pos_g_a w 3.5 * w 4 * h2 + ;
+: pos_o2_a w 5 * w 4 * h2 + ;
+: pos_d_a w 6.5 * w 4 * h2 + ;
+: pos_o3_a w 8 * w 4 * h2 + ;
+: pos_m2_a w 9.5 * w 4 * h2 + ;
+
+: pos_c_b w 10.5 * w 7.5 * h2 + ;
+: pos_h_b w 7 * w 7.5 * h2 + ;
+: pos_o1_b w 8.5 * w 7.5 * h2 + ;
+: pos_b_b w 5.5 * w 7.5 * h2 + ;
+: pos_y_b w 5 * w 4 * h2 + ;
+: pos_m1_b w 6.5 * w 4 * h2 + ;
+: pos_g_b w 2.5 * w 7.5 * h2 + ;
+: pos_o2_b w 4 * w 7.5 * h2 + ;
+: pos_d_b w 3.5 * w 4 * h2 + ;
+
+: c_c pos_c_a pos_c_b center ;
+: r_c pos_c_a pos_c_b radius ;
+: p_c pos_c_a pos_c_b phase ;
+
+: c_h pos_h_a pos_h_b center ;
+: r_h pos_h_a pos_h_b radius ;
+: p_h pos_h_a pos_h_b phase ;
+
+: c_o1 pos_o1_a pos_o1_b center ;
+: r_o1 pos_o1_a pos_o1_b radius ;
+: p_o1 pos_o1_a pos_o1_b phase ;
+
+: c_b pos_b_a pos_b_b center ;
+: r_b pos_b_a pos_b_b radius ;
+: p_b pos_b_a pos_b_b phase ;
+
+: c_y pos_y_a pos_y_b center ;
+: r_y pos_y_a pos_y_b radius ;
+: p_y pos_y_a pos_y_b phase ;
+
+: c_m1 pos_m1_a pos_m1_b center ;
+: r_m1 pos_m1_a pos_m1_b radius ;
+: p_m1 pos_m1_a pos_m1_b phase ;
+
+: c_g pos_g_a pos_g_b center ;
+: r_g pos_g_a pos_g_b radius ;
+: p_g pos_g_a pos_g_b phase ;
+
+: c_o2 pos_o2_a pos_o2_b center ;
+: r_o2 pos_o2_a pos_o2_b radius ;
+: p_o2 pos_o2_a pos_o2_b phase ;
+
+: c_d pos_d_a pos_d_b center ;
+: r_d pos_d_a pos_d_b radius ;
+: p_d pos_d_a pos_d_b phase ;
+
+: tt t 3 * t 3 * sin - 0.5 * ;
+
+: pos_c c_c tt p_c + dup sin swap cos r_c 0 z* z+ push_xy ;
+: pos_h c_h tt p_h + dup sin swap cos r_h 0 z* z+ push_xy ;
+: pos_o1 c_o1 tt p_o1 + dup sin swap cos r_o1 0 z* z+ push_xy ;
+: pos_b c_b tt p_b + dup sin swap cos r_b 0 z* z+ push_xy ;
+: pos_y c_y tt p_y + dup sin swap cos r_y 0 z* z+ push_xy ;
+: pos_m1 c_m1 tt p_m1 + dup sin swap cos r_m1 0 z* z+ push_xy ;
+: pos_g c_g tt p_g + dup sin swap cos r_g 0 z* z+ push_xy ;
+: pos_o2 c_o2 tt p_o2 + dup sin swap cos r_o2 0 z* z+ push_xy ;
+: pos_d c_d tt p_d + dup sin swap cos r_d 0 z* z+ push_xy ;
+: pos_o3 pos_o3_a push_xy ;
+: pos_m2 pos_m2_a push_xy ;
+
+pos_c char_c
+pos_h char_h xor
+pos_o1 char_o xor
+pos_b char_b xor
+pos_y  char_y xor
+pos_m1 char_m xor
+
+pos_g char_g xor 
+pos_o2 char_o xor
+pos_d char_d xor
+pos_o3 char_o xor
+pos_m2 char_m xor
+
+dup dup
